@@ -24,7 +24,7 @@ func resourceTalendPlanRunConfigCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*talendRest.Client)
 	jsonRequest := d.Get("json_request").(string)
 
-	planRunConfig, err := client.UpdatePlanRunConfigFromPlainJson(jsonRequest)
+	planRunConfig, err := client.UpdatePlanRunConfigFromPlainJSON(jsonRequest)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func resourceTalendPlanRunConfigRead(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*talendRest.Client)
 	id := d.Id()
 
-	planRunConfig, err := client.GetPlanRunConfigByPlanId(id)
+	planRunConfig, err := client.GetPlanRunConfigByPlanID(id)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func resourceTalendPlanRunConfigUpdate(d *schema.ResourceData, meta interface{})
 	jsonRequest := d.Get("json_request").(string)
 
 	if d.HasChange("json_request") {
-		planRunConfig, err := client.UpdatePlanRunConfigFromPlainJson(jsonRequest)
+		planRunConfig, err := client.UpdatePlanRunConfigFromPlainJSON(jsonRequest)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func resourceTalendPlanRunConfigUpdate(d *schema.ResourceData, meta interface{})
 func resourceTalendPlanRunConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*talendRest.Client)
 
-	err := client.DeletePlanRunConfigByPlanId(d.Id())
+	err := client.DeletePlanRunConfigByPlanID(d.Id())
 	if err != nil {
 		return err
 	}

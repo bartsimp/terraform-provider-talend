@@ -24,7 +24,7 @@ func resourceTalendTaskCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*talendRest.Client)
 	jsonRequest := d.Get("json_request").(string)
 
-	task, err := client.CreateTaskFromPlainJson(jsonRequest)
+	task, err := client.CreateTaskFromPlainJSON(jsonRequest)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func resourceTalendTaskCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceTalendTaskRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*talendRest.Client)
 
-	task, err := client.GetTaskById(d.Id())
+	task, err := client.GetTaskByID(d.Id())
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func resourceTalendTaskUpdate(d *schema.ResourceData, meta interface{}) error {
 	jsonRequest := d.Get("json_request").(string)
 
 	if d.HasChange("json_request") {
-		task, err := client.UpdateTaskFromPlainJson(d.Id(), jsonRequest)
+		task, err := client.UpdateTaskFromPlainJSON(d.Id(), jsonRequest)
 		if err != nil {
 			return err
 		}

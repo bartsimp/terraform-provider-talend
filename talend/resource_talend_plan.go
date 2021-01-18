@@ -24,7 +24,7 @@ func resourceTalendPlanCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*talendRest.Client)
 	jsonRequest := d.Get("json_request").(string)
 
-	plan, err := client.CreatePlanFromPlainJson(jsonRequest)
+	plan, err := client.CreatePlanFromPlainJSON(jsonRequest)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func resourceTalendPlanRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*talendRest.Client)
 	id := d.Id()
 
-	plan, err := client.GetPlanById(id)
+	plan, err := client.GetPlanByID(id)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func resourceTalendPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 	jsonRequest := d.Get("json_request").(string)
 
 	if d.HasChange("json_request") {
-		plan, err := client.UpdatePlanFromPlainJson(d.Id(), jsonRequest)
+		plan, err := client.UpdatePlanFromPlainJSON(d.Id(), jsonRequest)
 		if err != nil {
 			return err
 		}
