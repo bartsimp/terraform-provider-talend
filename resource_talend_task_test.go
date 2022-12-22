@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bartsimp/talend-rest-go/client/tasks"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -54,23 +55,24 @@ func testTalendTaskDestroy(s *terraform.State) error {
 }
 
 func testTalendTaskConfigBasic() string {
-	environmentID := "63a2e0dfaefa2e4ea7b1f4ae"
-	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"
+	environmentID := "63a2e0dfaefa2e4ea7b1f4ae" // default
+	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"   // Personal
 	artifactID := "63a30b1d6acf7f4c287cd9e6"
 	artifactVersion := "0.1.0.20222112013315"
+	taskName := sdkacctest.RandomWithPrefix("task")
 	return fmt.Sprintf(`
 		resource "talend_task" "my_talend_task_1" {
-			environment_id	= "%s"
-			workspace_id	= "%s"
-			name			= "Hello world task"
-			description		= "Task detail description"
+			environment_id	= %[1]q
+			workspace_id	= %[2]q
+			name			= %[5]q
+			description		= "description for %[5]s"
 			artifact		{
-				id		= "%s"
-				version	= "%s"
+				id		= %[3]q
+				version	= %[4]q
 			}
 			
 		}
-	`, environmentID, workspaceID, artifactID, artifactVersion)
+	`, environmentID, workspaceID, artifactID, artifactVersion, taskName)
 }
 
 func testTalendTaskExists(n string) resource.TestCheckFunc {

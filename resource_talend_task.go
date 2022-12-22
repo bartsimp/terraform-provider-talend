@@ -78,16 +78,19 @@ func resourceTalendTaskCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceTalendTaskRead(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	getTaskOK, err := talendClient.client.Tasks.GetTask(
+	_, err := talendClient.client.Tasks.GetTask(
 		tasks.NewGetTaskParams().WithTaskID(d.Id()),
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *tasks.GetTaskNotFound:
+			fmt.Printf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+			d.SetId("") // removing from state
+			return fmt.Errorf("talend task not found, removing from state")
+		}
 		return err
 	}
-
-	d.SetId(*getTaskOK.GetPayload().ID)
-	// d.Set("name", getTaskOK.GetPayload().Name)
 
 	return nil
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bartsimp/talend-rest-go/client/plans_executables"
 	"github.com/bartsimp/talend-rest-go/models"
+	"github.com/bartsimp/talend-rest-go/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -58,6 +61,11 @@ func resourceTalendPlanCreate(d *schema.ResourceData, meta interface{}) error {
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *plans_executables.GetAvailablePlansBadRequest:
+		case *plans_executables.CreatePlanBadRequest:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 
@@ -68,16 +76,18 @@ func resourceTalendPlanCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceTalendPlanRead(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	getExecutableDetailsOK, err := talendClient.client.PlansExecutables.GetExecutableDetails(
+	_, err := talendClient.client.PlansExecutables.GetExecutableDetails(
 		plans_executables.NewGetExecutableDetailsParams().WithPlanID(d.Id()),
 		talendClient.authInfo,
 	)
 	if err != nil {
-		return err
+		switch err := err.(type) {
+		case *plans_executables.DeletePlanNotFound:
+			fmt.Printf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+			d.SetId("") // removing from state
+			return fmt.Errorf("talend plan not found, removing from state")
+		}
 	}
-
-	d.Set("id", getExecutableDetailsOK.GetPayload().Executable)
-	d.Set("name", getExecutableDetailsOK.GetPayload().Name)
 
 	return nil
 }
@@ -99,8 +109,7 @@ func resourceTalendPlanUpdate(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 
-		d.Set("id", updatePlanOK.GetPayload().ID)
-		d.Set("name", updatePlanOK.GetPayload().Name)
+		d.SetId(*updatePlanOK.GetPayload().ID)
 	}
 
 	return nil
@@ -114,6 +123,10 @@ func resourceTalendPlanDelete(d *schema.ResourceData, meta interface{}) error {
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *plans_executables.DeletePlanNotFound:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 

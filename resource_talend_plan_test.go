@@ -5,20 +5,19 @@ import (
 	"testing"
 
 	"github.com/bartsimp/talend-rest-go/client/plans_executables"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestTalendPlanBasic(t *testing.T) {
-	workspaceID := "myWsID"
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testPreCheck(t) },
 		Providers:    testProviders,
 		CheckDestroy: testTalendPlanDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testTalendPlanConfigBasic(workspaceID),
+				Config: testTalendPlanConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
 					testTalendPlanExists("talend_plan.my_talend_plan_1"),
 				),
@@ -37,34 +36,58 @@ func testTalendPlanDestroy(s *terraform.State) error {
 
 		planID := rs.Primary.ID
 
-		_, err := tc.client.PlansExecutables.DeletePlan(
-			plans_executables.NewDeletePlanParams().WithPlanID(planID),
+		plan, err := tc.client.PlansExecutables.GetExecutableDetails(
+			plans_executables.NewGetExecutableDetailsParams().WithPlanID(planID),
 			tc.authInfo,
 		)
 		if err != nil {
+			switch err.(type) {
+			case *plans_executables.GetExecutableDetailsNotFound:
+				return nil // correct, expected result
+			}
 			return err
 		}
+		if plan.GetPayload() != nil {
+			return fmt.Errorf("CheckDestroy failed: plan yet present")
+		}
 	}
-	return nil
+	return fmt.Errorf("CheckDestroy failed")
 }
 
-func testTalendPlanConfigBasic(workspaceID string) string {
+func testTalendPlanConfigBasic() string {
+	environmentID := "63a2e0dfaefa2e4ea7b1f4ae" // default
+	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"   // Personal
+	artifactID := "63a30b1d6acf7f4c287cd9e6"
+	artifactVersion := "0.1.0.20222112013315"
+	taskName := sdkacctest.RandomWithPrefix("task")
+	planName := sdkacctest.RandomWithPrefix("plan")
 	return fmt.Sprintf(`
-		resource "talend_plan" "my_talend_plan_1" {
-			workspace_id	= "%s"
-			name            = "simple executable"
-			steps {
-					name       = "step1"
-					condition  = "ALL_SUCCEEDED"
-					task_ids   = ["57f64991e4b0b689a64feed3", "57f64991e4b0b689a64feed4"]
-			}
-			steps {
-					name       = "step2"
-					condition  = "ALL_SUCCEEDED"
-					task_ids   = ["57f64991e4b0b689a64feed5", "57f64991e4b0b689a64feed6"]
-			}
-		}
-	`, workspaceID)
+resource "talend_task" "my_talend_task_1" {
+    environment_id = %[1]q
+    workspace_id   = %[2]q
+    name           = %[5]q
+    description    = "description for %[5]s"
+    artifact       {
+                     id      = %[3]q
+                     version = %[4]q
+                   }
+}
+
+resource "talend_plan" "my_talend_plan_1" {
+    workspace_id = %[2]q
+    name         = %[6]q
+    steps        {
+                   name       = "step1"
+                   condition  = "ALL_SUCCEEDED"
+                   task_ids   = [talend_task.my_talend_task_1.id]
+                 }
+    steps        {
+                   name       = "step2"
+                   condition  = "ALL_SUCCEEDED"
+                   task_ids   = [talend_task.my_talend_task_1.id]
+                 }
+}
+`, environmentID, workspaceID, artifactID, artifactVersion, taskName, planName)
 }
 
 func testTalendPlanExists(n string) resource.TestCheckFunc {
