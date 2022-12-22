@@ -3,7 +3,7 @@ module terraform-example.com/exampleprovider/talend
 go 1.18
 
 require (
-	github.com/bartsimp/talend-rest-go v0.1.1-0.20221207181957-df6368b98b4a
+	github.com/bartsimp/talend-rest-go v0.1.1-0.20221222105545-8dd062d0b689
 	github.com/go-openapi/runtime v0.25.0
 	github.com/go-openapi/strfmt v0.21.3
 )

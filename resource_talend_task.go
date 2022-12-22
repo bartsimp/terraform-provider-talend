@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bartsimp/talend-rest-go/client/tasks"
+	"github.com/bartsimp/talend-rest-go/client/workspaces"
 	"github.com/bartsimp/talend-rest-go/models"
+	"github.com/bartsimp/talend-rest-go/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -60,6 +64,10 @@ func resourceTalendTaskCreate(d *schema.ResourceData, meta interface{}) error {
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *tasks.CreateTaskBadRequest:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 
@@ -117,6 +125,12 @@ func resourceTalendTaskDelete(d *schema.ResourceData, meta interface{}) error {
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *workspaces.UpdateCustomWorkspaceBadRequest:
+		case *tasks.DeleteTaskConflict:
+		case *tasks.DeleteTaskNotFound:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 

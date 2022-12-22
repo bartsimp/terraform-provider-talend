@@ -10,15 +10,13 @@ import (
 )
 
 func TestTalendTaskBasic(t *testing.T) {
-	workspaceID := "myWsID"
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testPreCheck(t) },
 		Providers:    testProviders,
 		CheckDestroy: testTalendTaskDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testTalendTaskConfigBasic(workspaceID),
+				Config: testTalendTaskConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
 					testTalendTaskExists("talend_task.my_talend_task_1"),
 				),
@@ -37,31 +35,42 @@ func testTalendTaskDestroy(s *terraform.State) error {
 
 		taskID := rs.Primary.ID
 
-		_, err := tc.client.Tasks.DeleteTask(
-			tasks.NewDeleteTaskParams().WithTaskID(taskID),
-			tc.authInfo,
-		)
+		task, err := tc.client.Tasks.GetTask(
+			tasks.NewGetTaskParams().WithTaskID(taskID),
+			tc.authInfo)
 		if err != nil {
+			switch err.(type) {
+			case *tasks.GetTaskNotFound:
+				return nil // correct, expected result
+			}
 			return err
+		}
+		if task.GetPayload() != nil {
+			return fmt.Errorf("Talend Task still exists: %s", rs.Primary.ID)
 		}
 	}
 
-	return nil
+	return fmt.Errorf("CheckDestroy failed")
 }
 
-func testTalendTaskConfigBasic(workspaceID string) string {
+func testTalendTaskConfigBasic() string {
+	environmentID := "63a2e0dfaefa2e4ea7b1f4ae"
+	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"
+	artifactID := "63a30b1d6acf7f4c287cd9e6"
+	artifactVersion := "0.1.0.20222112013315"
 	return fmt.Sprintf(`
 		resource "talend_task" "my_talend_task_1" {
+			environment_id	= "%s"
 			workspace_id	= "%s"
 			name			= "Hello world task"
 			description		= "Task detail description"
 			artifact		{
-				id		= "5c1111d7a4186a4eafed0587"
-				version	= "0.1.0"
+				id		= "%s"
+				version	= "%s"
 			}
-			environment_id	= "5d7a3d082d909b386943787e"
+			
 		}
-	`, workspaceID)
+	`, environmentID, workspaceID, artifactID, artifactVersion)
 }
 
 func testTalendTaskExists(n string) resource.TestCheckFunc {
