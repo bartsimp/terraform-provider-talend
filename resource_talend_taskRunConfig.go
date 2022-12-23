@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bartsimp/talend-rest-go/client/tasks"
 	"github.com/bartsimp/talend-rest-go/models"
+	"github.com/bartsimp/talend-rest-go/utils"
+	"github.com/go-openapi/runtime"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -62,8 +66,17 @@ func resourceTalendTaskRunConfigCreate(d *schema.ResourceData, meta interface{})
 
 	_, err := talendClient.client.Tasks.ConfigureTaskExecution(
 		tasks.NewConfigureTaskExecutionParams().WithTaskID(taskId).WithBody(&body),
+		func(co *runtime.ClientOperation) {
+			co.AuthInfo = talendClient.authInfo
+		},
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *tasks.ConfigureTaskExecutionBadRequest:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		case *tasks.ConfigureTaskExecutionUnauthorized:
+			return fmt.Errorf("unauthorized %s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 
@@ -76,6 +89,9 @@ func resourceTalendTaskRunConfigRead(d *schema.ResourceData, meta interface{}) e
 
 	_, err := talendClient.client.Tasks.GetTaskConfiguration(
 		tasks.NewGetTaskConfigurationParams().WithTaskID(d.Id()),
+		func(co *runtime.ClientOperation) {
+			co.AuthInfo = talendClient.authInfo
+		},
 	)
 	return err
 }
