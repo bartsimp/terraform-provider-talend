@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bartsimp/talend-rest-go/client/plans_executables"
 	"github.com/bartsimp/talend-rest-go/models"
+	"github.com/bartsimp/talend-rest-go/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceTalendPlanRunConfig() *schema.Resource {
@@ -30,6 +34,43 @@ func resourceTalendPlanRunConfig() *schema.Resource {
 						"time_zone": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+						"at_times": {
+							Type:     schema.TypeSet,
+							Required: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"times": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+									"time": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"start_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"end_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"interval": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validation.IntAtLeast(0),
+									},
+								},
+							},
 						},
 					},
 				},
@@ -65,6 +106,10 @@ func resourceTalendPlanRunConfigCreate(d *schema.ResourceData, meta interface{})
 		talendClient.authInfo,
 	)
 	if err != nil {
+		switch err := err.(type) {
+		case *plans_executables.ConfigurePlanExecutionBadRequest:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
 		return err
 	}
 
@@ -95,8 +140,8 @@ func resourceTalendPlanRunConfigUpdate(d *schema.ResourceData, meta interface{})
 func resourceTalendPlanRunConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	_, err := talendClient.client.PlansExecutables.DeletePlan(
-		plans_executables.NewDeletePlanParams().WithPlanID(d.Id()),
+	_, err := talendClient.client.PlansExecutables.StopScheduleForPlan(
+		plans_executables.NewStopScheduleForPlanParams().WithPlanID(d.Id()),
 		talendClient.authInfo,
 	)
 	return err
@@ -111,6 +156,18 @@ func parsePlanRunConfig(d *schema.ResourceData) (string, models.PlanRunConfig) {
 	triggerType := trigger["type"].(string)
 	startDate := trigger["start_date"].(string)
 	timeZone := trigger["time_zone"].(string)
+	setAtTimes := trigger["at_times"].(*schema.Set)
+	atTimes0 := setAtTimes.List()[0]
+	atTimes := atTimes0.(map[string]interface{})
+	atTimesType := atTimes["type"].(string)
+	atTimesTimes := []string{}
+	for _, t := range atTimes["times"].([]interface{}) {
+		atTimesTimes = append(atTimesTimes, t.(string))
+	}
+	atTimesTime := atTimes["time"].(string)
+	atTimesStartTime := atTimes["start_time"].(string)
+	atTimesEndTime := atTimes["end_time"].(string)
+	atTimesInterval := atTimes["interval"].(int)
 
 	setRuntime := d.Get("runtime").(*schema.Set)
 	runtime0 := setRuntime.List()[0]
@@ -123,6 +180,14 @@ func parsePlanRunConfig(d *schema.ResourceData) (string, models.PlanRunConfig) {
 			Type:      &triggerType,
 			StartDate: &startDate,
 			TimeZone:  &timeZone,
+			AtTimes: &models.TimeSchedule{
+				Type:      &atTimesType,
+				Times:     atTimesTimes,
+				Time:      atTimesTime,
+				StartTime: atTimesStartTime,
+				EndTime:   atTimesEndTime,
+				Interval:  int32(atTimesInterval),
+			},
 		},
 		Runtime: &models.Runtime{
 			Type: runtimeType,

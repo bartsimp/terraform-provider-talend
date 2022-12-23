@@ -167,9 +167,9 @@ func parseUpdate(d *schema.ResourceData) models.TaskAutoUpgradeRequest {
 	workspaceID := d.Get("workspace_id").(string)
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
-	a := d.Get("artifact").(*schema.Set)
-	aa := a.List()[0]
-	artifact := aa.(map[string]interface{})
+	setArtifact := d.Get("artifact").(*schema.Set)
+	setArtifact0 := setArtifact.List()[0]
+	artifact := setArtifact0.(map[string]interface{})
 	artifactId := artifact["id"].(string)
 	artifactVersion := artifact["version"].(string)
 
