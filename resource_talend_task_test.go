@@ -34,10 +34,8 @@ func testTalendTaskDestroy(s *terraform.State) error {
 			continue
 		}
 
-		taskID := rs.Primary.ID
-
 		task, err := tc.client.Tasks.GetTask(
-			tasks.NewGetTaskParams().WithTaskID(taskID),
+			tasks.NewGetTaskParams().WithTaskID(rs.Primary.ID),
 			tc.authInfo)
 		if err != nil {
 			switch err.(type) {

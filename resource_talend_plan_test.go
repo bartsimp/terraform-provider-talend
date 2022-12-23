@@ -34,10 +34,8 @@ func testTalendPlanDestroy(s *terraform.State) error {
 			continue
 		}
 
-		planID := rs.Primary.ID
-
 		plan, err := tc.client.PlansExecutables.GetExecutableDetails(
-			plans_executables.NewGetExecutableDetailsParams().WithPlanID(planID),
+			plans_executables.NewGetExecutableDetailsParams().WithPlanID(rs.Primary.ID),
 			tc.authInfo,
 		)
 		if err != nil {
@@ -48,7 +46,7 @@ func testTalendPlanDestroy(s *terraform.State) error {
 			return err
 		}
 		if plan.GetPayload() != nil {
-			return fmt.Errorf("CheckDestroy failed: plan yet present")
+			return fmt.Errorf("Talend Plan still exists: %s", rs.Primary.ID)
 		}
 	}
 	return fmt.Errorf("CheckDestroy failed")
