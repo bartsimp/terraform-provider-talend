@@ -24,6 +24,10 @@ func resourceTalendWorkspace() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"owner": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
 		},
 		Create: resourceTalendWorkspaceCreate,
 		Read:   resourceTalendWorkspaceRead,
@@ -38,6 +42,7 @@ func resourceTalendWorkspaceCreate(d *schema.ResourceData, meta interface{}) err
 	workspaceName := d.Get("name").(string)
 	workspaceDesc := d.Get("description").(string)
 	workspaceEnvID := d.Get("environment_id").(string)
+	owner := d.Get("owner").(string)
 
 	createCustomWorkspaceOK, createCustomWorkspaceCreated, err := talendClient.client.Workspaces.CreateCustomWorkspace(
 		workspaces.NewCreateCustomWorkspaceParams().WithBody(
@@ -45,6 +50,7 @@ func resourceTalendWorkspaceCreate(d *schema.ResourceData, meta interface{}) err
 				Name:          &workspaceName,
 				Description:   workspaceDesc,
 				EnvironmentID: &workspaceEnvID,
+				Owner:         owner,
 			},
 		),
 		talendClient.authInfo,
@@ -95,15 +101,18 @@ func resourceTalendWorkspaceUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("environment_id") ||
 		d.HasChange("name") ||
-		d.HasChange("description") {
+		d.HasChange("description") ||
+		d.HasChange("owner") {
 
 		workspaceName := d.Get("name").(string)
 		workspaceDesc := d.Get("description").(string)
+		owner := d.Get("owner").(string)
 
 		_, err := talendClient.client.Workspaces.UpdateCustomWorkspace(
 			workspaces.NewUpdateCustomWorkspaceParams().WithWorkspaceID(d.Id()).WithBody(&models.UpdateWorkspaceRequest{
 				Name:        &workspaceName,
 				Description: workspaceDesc,
+				Owner:       owner,
 			}),
 			talendClient.authInfo,
 		)
