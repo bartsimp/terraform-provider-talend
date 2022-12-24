@@ -35,6 +35,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"talend_environment":    resourceTalendEnvironment(),
 			"talend_workspace":      resourceTalendWorkspace(),
 			"talend_task":           resourceTalendTask(),
 			"talend_task_runconfig": resourceTalendTaskRunConfig(),
