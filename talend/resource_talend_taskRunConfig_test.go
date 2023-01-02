@@ -1,4 +1,4 @@
-package main
+package talend
 
 import (
 	"fmt"
@@ -10,32 +10,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestTalendTaskBasic(t *testing.T) {
+func TestTalendTaskRunConfigBasic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testPreCheck(t) },
 		Providers:    testProviders,
-		CheckDestroy: testTalendTaskDestroy,
+		CheckDestroy: testTalendTaskRunConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testTalendTaskConfigBasic(),
+				Config: testTalendTaskRunConfigConfigBasic(),
 				Check: resource.ComposeTestCheckFunc(
-					testTalendTaskExists("talend_task.my_talend_task_1"),
+					testTalendTaskRunConfigExists("talend_task_runconfig.my_talend_task_runconfig_1"),
 				),
 			},
 		},
 	})
 }
 
-func testTalendTaskDestroy(s *terraform.State) error {
+func testTalendTaskRunConfigDestroy(s *terraform.State) error {
 	tc := testProvider.Meta().(TalendClient)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "talend_task" {
+		if rs.Type != "talend_task_runconfig" {
 			continue
 		}
 
-		task, err := tc.client.Tasks.GetTask(
-			tasks.NewGetTaskParams().WithTaskID(rs.Primary.ID),
+		_, err := tc.client.Tasks.StopSchedule(
+			tasks.NewStopScheduleParams().WithTaskID(rs.Primary.Attributes["task_id"]),
 			tc.authInfo)
 		if err != nil {
 			switch err.(type) {
@@ -44,15 +44,13 @@ func testTalendTaskDestroy(s *terraform.State) error {
 			}
 			return err
 		}
-		if task.GetPayload() != nil {
-			return fmt.Errorf("Talend Task still exists: %s", rs.Primary.ID)
-		}
 	}
 
 	return fmt.Errorf("CheckDestroy failed")
 }
 
-func testTalendTaskConfigBasic() string {
+func testTalendTaskRunConfigConfigBasic() string {
+	// taskID := "63a4607876f4556a30a7f530"
 	environmentID := "63a2e0dfaefa2e4ea7b1f4ae" // default
 	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"   // Personal
 	artifactID := "63a30b1d6acf7f4c287cd9e6"
@@ -60,23 +58,41 @@ func testTalendTaskConfigBasic() string {
 	taskName := sdkacctest.RandomWithPrefix("task")
 	return fmt.Sprintf(`
 		resource "talend_task" "my_talend_task_1" {
-			environment_id	= %[1]q
-			workspace_id	= %[2]q
-			name			= %[5]q
-			description		= "description for %[5]s"
-			artifact		{
-				id		= %[3]q
-				version	= %[4]q
-			}
-			
+			environment_id = %[1]q
+			workspace_id   = %[2]q
+			name           = %[5]q
+			description    = "description for %[5]s"
+			artifact       {
+							id      = %[3]q
+							version = %[4]q
+						}
+		}
+
+		resource "talend_task_runconfig" "my_talend_task_runconfig_1" {
+		  task_id  = talend_task.my_talend_task_1.id
+		  trigger {
+		    type       = "MANUAL"
+		    start_date = "2019-09-25"
+		    time_zone  = "Europe/London"
+		  }
+		  runtime {
+		    type = "CLOUD"
+		  }
 		}
 	`, environmentID, workspaceID, artifactID, artifactVersion, taskName)
 }
 
-func testTalendTaskExists(n string) resource.TestCheckFunc {
+func testTalendTaskRunConfigExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
-
+		/*
+			_, err := talendClient.client.Tasks.GetTaskConfiguration(
+				tasks.NewGetTaskConfigurationParams().WithTaskID(d.Id()),
+				func(co *runtime.ClientOperation) {
+					co.AuthInfo = talendClient.authInfo
+				},
+			)
+		*/
 		if !ok {
 			return fmt.Errorf("Not found: %s", n)
 		}

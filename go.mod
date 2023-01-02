@@ -1,4 +1,4 @@
-module terraform-example.com/exampleprovider/talend
+module github.com/bartsimp/terraform-provider-talend
 
 go 1.18
 

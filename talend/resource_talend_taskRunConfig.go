@@ -1,19 +1,20 @@
-package main
+package talend
 
 import (
 	"fmt"
 
-	"github.com/bartsimp/talend-rest-go/client/plans_executables"
+	"github.com/bartsimp/talend-rest-go/client/tasks"
 	"github.com/bartsimp/talend-rest-go/models"
 	"github.com/bartsimp/talend-rest-go/utils"
+	"github.com/go-openapi/runtime"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceTalendPlanRunConfig() *schema.Resource {
+func resourceTalendTaskRunConfig() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
-			"plan_id": {
+			"task_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -89,46 +90,52 @@ func resourceTalendPlanRunConfig() *schema.Resource {
 				},
 			},
 		},
-		Create: resourceTalendPlanRunConfigCreate,
-		Read:   resourceTalendPlanRunConfigRead,
-		Update: resourceTalendPlanRunConfigUpdate,
-		Delete: resourceTalendPlanRunConfigDelete,
+		Create: resourceTalendTaskRunConfigCreate,
+		Read:   resourceTalendTaskRunConfigRead,
+		Update: resourceTalendTaskRunConfigUpdate,
+		Delete: resourceTalendTaskRunConfigDelete,
 	}
 }
 
-func resourceTalendPlanRunConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTalendTaskRunConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	planID, body := parsePlanRunConfig(d)
+	taskId, body := parseTaskRunConfig(d)
 
-	_, err := talendClient.client.PlansExecutables.ConfigurePlanExecution(
-		plans_executables.NewConfigurePlanExecutionParams().WithPlanID(planID).WithBody(&body),
-		talendClient.authInfo,
+	_, err := talendClient.client.Tasks.ConfigureTaskExecution(
+		tasks.NewConfigureTaskExecutionParams().WithTaskID(taskId).WithBody(&body),
+		func(co *runtime.ClientOperation) {
+			co.AuthInfo = talendClient.authInfo
+		},
 	)
 	if err != nil {
 		switch err := err.(type) {
-		case *plans_executables.ConfigurePlanExecutionBadRequest:
+		case *tasks.ConfigureTaskExecutionBadRequest:
 			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		case *tasks.ConfigureTaskExecutionUnauthorized:
+			return fmt.Errorf("unauthorized %s", utils.UnmarshalErrorResponse(err.GetPayload()))
 		}
 		return err
 	}
 
-	d.SetId(planID)
+	d.SetId(taskId)
 	return nil
 }
 
-func resourceTalendPlanRunConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTalendTaskRunConfigRead(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	_, err := talendClient.client.PlansExecutables.GetExecutableDetails(
-		plans_executables.NewGetExecutableDetailsParams().WithPlanID(d.Id()),
-		talendClient.authInfo,
+	_, err := talendClient.client.Tasks.GetTaskConfiguration(
+		tasks.NewGetTaskConfigurationParams().WithTaskID(d.Id()),
+		func(co *runtime.ClientOperation) {
+			co.AuthInfo = talendClient.authInfo
+		},
 	)
 	return err
 }
 
-func resourceTalendPlanRunConfigUpdate(d *schema.ResourceData, meta interface{}) error {
-	if d.HasChange("plan_id") ||
+func resourceTalendTaskRunConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+	if d.HasChange("task_id") ||
 		d.HasChange("trigger") ||
 		d.HasChange("runtime") {
 
@@ -137,18 +144,18 @@ func resourceTalendPlanRunConfigUpdate(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceTalendPlanRunConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTalendTaskRunConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	_, err := talendClient.client.PlansExecutables.StopScheduleForPlan(
-		plans_executables.NewStopScheduleForPlanParams().WithPlanID(d.Id()),
+	_, err := talendClient.client.Tasks.StopSchedule(
+		tasks.NewStopScheduleParams().WithTaskID(d.Id()),
 		talendClient.authInfo,
 	)
 	return err
 }
 
-func parsePlanRunConfig(d *schema.ResourceData) (string, models.PlanRunConfig) {
-	planID := d.Get("plan_id").(string)
+func parseTaskRunConfig(d *schema.ResourceData) (string, models.TaskRunConfig) {
+	taskID := d.Get("task_id").(string)
 
 	setTrigger := d.Get("trigger").(*schema.Set)
 	trigger0 := setTrigger.List()[0]
@@ -174,8 +181,7 @@ func parsePlanRunConfig(d *schema.ResourceData) (string, models.PlanRunConfig) {
 	runtime := runtime0.(map[string]interface{})
 	runtimeType := runtime["type"].(string)
 
-	return planID, models.PlanRunConfig{
-
+	return taskID, models.TaskRunConfig{
 		Trigger: &models.Trigger{
 			Type:      &triggerType,
 			StartDate: &startDate,

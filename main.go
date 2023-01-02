@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 
+	"github.com/bartsimp/terraform-provider-talend/talend"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
@@ -15,7 +16,7 @@ func main() {
 	opts := &plugin.ServeOpts{
 		Debug: debugMode,
 		ProviderFunc: func() *schema.Provider {
-			return Provider()
+			return talend.Provider()
 		},
 	}
 
