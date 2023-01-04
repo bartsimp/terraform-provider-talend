@@ -53,10 +53,10 @@ func testTalendPlanDestroy(s *terraform.State) error {
 }
 
 func testTalendPlanConfigBasic() string {
-	environmentID := "63a2e0dfaefa2e4ea7b1f4ae" // default
-	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"   // Personal
-	artifactID := "63a30b1d6acf7f4c287cd9e6"
-	artifactVersion := "0.1.0.20222112013315"
+	environmentID := "63b56857b2b29e736cecce70" // default
+	workspaceID := "63b56858b2b29e736cecce73"   // Personal
+	artifactID := "63b585c56acf7f4c287d181b"
+	artifactVersion := "0.1.0.20230401015724"
 	taskName := sdkacctest.RandomWithPrefix("task")
 	planName := sdkacctest.RandomWithPrefix("plan")
 	return fmt.Sprintf(`

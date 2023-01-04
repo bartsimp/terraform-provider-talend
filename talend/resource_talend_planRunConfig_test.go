@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bartsimp/talend-rest-go/client/plans_executables"
+	"github.com/bartsimp/talend-rest-go/utils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -33,12 +34,15 @@ func testTalendPlanRunConfigDestroy(s *terraform.State) error {
 		if rs.Type != "talend_plan_runconfig" {
 			continue
 		}
-
-		plan, err := tc.client.PlansExecutables.ConfigurePlanExecution(
-			plans_executables.NewConfigurePlanExecutionParams().WithPlanID(rs.Primary.ID),
+		// fmt.Println("rs.Primary.ID=", rs.Primary.ID)
+		// fmt.Println("rs.Primary.Attributes[\"plan_id\"]=", rs.Primary.Attributes["plan_id"])
+		plan, err := tc.client.PlansExecutables.GetPlanRunConfiguration(
+			plans_executables.NewGetPlanRunConfigurationParams().WithPlanID(rs.Primary.ID),
 			tc.authInfo)
 		if err != nil {
-			switch err.(type) {
+			switch err := err.(type) {
+			case *plans_executables.GetPlanRunConfigurationBadRequest:
+				return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
 			case *plans_executables.GetExecutableDetailsNotFound:
 				return nil // correct, expected result
 			}
@@ -53,36 +57,59 @@ func testTalendPlanRunConfigDestroy(s *terraform.State) error {
 }
 
 func testTalendPlanRunConfigConfigBasic() string {
-	// taskID := "63a4607876f4556a30a7f530"
-	environmentID := "63a2e0dfaefa2e4ea7b1f4ae" // default
-	workspaceID := "63a2e0dfaefa2e4ea7b1f4b1"   // Personal
-	artifactID := "63a30b1d6acf7f4c287cd9e6"
-	artifactVersion := "0.1.0.20222112013315"
+	environmentID := "63b56857b2b29e736cecce70" // default
+	workspaceID := "63b56858b2b29e736cecce73"   // Personal
+	artifactID := "63b585c56acf7f4c287d181b"
+	artifactVersion := "0.1.0.20230401015724"
 	taskName := sdkacctest.RandomWithPrefix("task")
+	planName := sdkacctest.RandomWithPrefix("plan")
 	return fmt.Sprintf(`
-		resource "talend_task" "my_talend_task_1" {
-			environment_id = %[1]q
-			workspace_id   = %[2]q
-			name           = %[5]q
-			description    = "description for %[5]s"
-			artifact       {
-							id      = %[3]q
-							version = %[4]q
-						}
-		}
+resource "talend_task" "my_talend_task_1" {
+    environment_id = %[1]q
+    workspace_id   = %[2]q
+    name           = %[5]q
+    description    = "description for %[5]s"
+    artifact       {
+                     id      = %[3]q
+                     version = %[4]q
+                   }
+}
 
-		resource "talend_task_runconfig" "my_talend_task_runconfig_1" {
-		  task_id  = talend_task.my_talend_task_1.id
-		  trigger {
-		    type       = "MANUAL"
-		    start_date = "2019-09-25"
-		    time_zone  = "Europe/London"
-		  }
-		  runtime {
-		    type = "CLOUD"
-		  }
-		}
-	`, environmentID, workspaceID, artifactID, artifactVersion, taskName)
+resource "talend_plan" "my_talend_plan_1" {
+    workspace_id = %[2]q
+    name         = %[6]q
+    steps        {
+                   name       = "step1"
+                   condition  = "ALL_SUCCEEDED"
+                   task_ids   = [talend_task.my_talend_task_1.id]
+                 }
+    steps        {
+                   name       = "step2"
+                   condition  = "ALL_SUCCEEDED"
+                   task_ids   = [talend_task.my_talend_task_1.id]
+                 }
+}
+
+resource "talend_plan_runconfig" "my_talend_plan_runconfig_1" {
+    plan_id  = talend_plan.my_talend_plan_1.id
+    trigger {
+      type       = "ONCE"
+      start_date = "2025-09-25"
+      time_zone  = "Europe/London"
+      at_times {
+        type       = "AT_TIME"
+        times      = [ "10:00" ]
+        time       = "10:00"
+        start_time  = "10:00"
+        end_time    = "23:00"
+        interval   = 10
+      }
+    }
+    runtime {
+      type = "CLOUD"
+    }
+}
+`, environmentID, workspaceID, artifactID, artifactVersion, taskName, planName)
 }
 
 func testTalendPlanRunConfigExists(n string) resource.TestCheckFunc {

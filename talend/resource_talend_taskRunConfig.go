@@ -110,6 +110,7 @@ func resourceTalendTaskRunConfigCreate(d *schema.ResourceData, meta interface{})
 	)
 	if err != nil {
 		switch err := err.(type) {
+		case *tasks.ConfigureTaskExecutionInternalServerError:
 		case *tasks.ConfigureTaskExecutionBadRequest:
 			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
 		case *tasks.ConfigureTaskExecutionUnauthorized:

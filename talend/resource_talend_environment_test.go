@@ -30,15 +30,15 @@ func testTalendEnvironmentConfigBasic() string {
 	environmentName := sdkacctest.RandomWithPrefix("env")
 	environmentDesc := fmt.Sprintf("desc for %s", environmentName)
 	workspaceName := fmt.Sprintf("ws-%s", environmentName)
-	owner := "bevave5893"
+	owner := "dojon70323"
 	return fmt.Sprintf(`
-		resource "talend_environment" "my_talend_environment_1" {
-			name			= %[1]q
-			description		= %[2]q
-			workspace_name	= %[3]q
-			owner			= %[4]q
-		}
-	`, environmentName, environmentDesc, workspaceName, owner)
+resource "talend_environment" "my_talend_environment_1" {
+    name            = %[1]q
+    description     = %[2]q
+    workspace_name  = %[3]q
+    owner           = %[4]q
+}
+`, environmentName, environmentDesc, workspaceName, owner)
 }
 
 func testTalendEnvironmentExists(n string) resource.TestCheckFunc {
@@ -73,6 +73,9 @@ func testTalendEnvironmentDestroy(s *terraform.State) error {
 			return err
 		}
 		if getEnvironmentsOK.GetPayload() != nil {
+			if len(getEnvironmentsOK.GetPayload()) == 0 {
+				return nil
+			}
 			return fmt.Errorf("Talend Environment still exists: %s", rs.Primary.ID)
 		}
 	}

@@ -40,6 +40,8 @@ github.com/bartsimp/talend-rest-go v0.1.1-0.20221222105545-8dd062d0b689 h1:UJd4V
 github.com/bartsimp/talend-rest-go v0.1.1-0.20221222105545-8dd062d0b689/go.mod h1:GrKxV0wzpGI9eCO42oMFhTBvZZaX391ucE3SBfE/eck=
 github.com/bartsimp/talend-rest-go v0.1.1-0.20221223103612-a7ea61e223b3 h1:bn2vTM7VancLM6xsDLdGMku5tMeHzvtJ3mN9Z3Y9/HU=
 github.com/bartsimp/talend-rest-go v0.1.1-0.20221223103612-a7ea61e223b3/go.mod h1:GrKxV0wzpGI9eCO42oMFhTBvZZaX391ucE3SBfE/eck=
+github.com/bartsimp/talend-rest-go v0.1.1-0.20230104085505-177451e0423c h1:4IhDozel8G3Uz6OBlcV+4QYg6W3+2tctj0a5wBcFJeQ=
+github.com/bartsimp/talend-rest-go v0.1.1-0.20230104085505-177451e0423c/go.mod h1:GrKxV0wzpGI9eCO42oMFhTBvZZaX391ucE3SBfE/eck=
 github.com/bgentry/speakeasy v0.1.0 h1:ByYyxL9InA1OWqxJqqp2A5pYHUrCiAL6K3J+LKSsQkY=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=

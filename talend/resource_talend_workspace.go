@@ -127,7 +127,7 @@ func resourceTalendWorkspaceUpdate(d *schema.ResourceData, meta interface{}) err
 func resourceTalendWorkspaceDelete(d *schema.ResourceData, meta interface{}) error {
 	talendClient := meta.(TalendClient)
 
-	err := talendClient.client.Workspaces.DeleteWorkspace(
+	_, err := talendClient.client.Workspaces.DeleteWorkspace(
 		workspaces.NewDeleteWorkspaceParams().WithWorkspaceID(d.Id()),
 		talendClient.authInfo,
 	)
