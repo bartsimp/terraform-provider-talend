@@ -6,69 +6,53 @@ import (
 
 	"github.com/bartsimp/talend-rest-go/client/plans_executables"
 	"github.com/bartsimp/talend-rest-go/utils"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestTalendPlanRunConfigBasic(t *testing.T) {
+	taskResourceName := "talend_task.my_talend_task_1"
+	planResourceName := "talend_plan.my_talend_plan_1"
+	// planRunConfigResourceName := "talend_plan_runconfig.my_talend_plan_runconfig_1"
+	environmentID := "63b56857b2b29e736cecce70" // default
+	workspaceID := "63b56858b2b29e736cecce73"   // Personal
+	artifactID := "63b585c56acf7f4c287d181b"
+	artifactVersion := "0.1.0.20230401015724"
+	taskName := acctest.RandomWithPrefix("task")
+	taskDesc := fmt.Sprintf("desc for %s", taskName)
+	planName := acctest.RandomWithPrefix("plan")
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testPreCheck(t) },
 		Providers:    testProviders,
 		CheckDestroy: testTalendPlanRunConfigDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testTalendPlanRunConfigConfigBasic(),
+				Config: testTalendPlanRunConfigConfigBasic(environmentID, workspaceID, artifactID, artifactVersion, taskName, taskDesc, planName),
 				Check: resource.ComposeTestCheckFunc(
-					testTalendPlanRunConfigExists("talend_plan_runconfig.my_talend_plan_runconfig_1"),
+					resource.TestCheckResourceAttr(taskResourceName, "environment_id", environmentID),
+					resource.TestCheckResourceAttr(taskResourceName, "workspace_id", workspaceID),
+					resource.TestCheckResourceAttr(taskResourceName, "name", taskName),
+					resource.TestCheckResourceAttr(taskResourceName, "description", taskDesc),
+
+					resource.TestCheckResourceAttr(planResourceName, "workspace_id", workspaceID),
+					resource.TestCheckResourceAttr(planResourceName, "name", planName),
+
+					// resource.TestCheckResourceAttr(planRunConfigResourceName, "trigger.type", "ONCE"),
 				),
 			},
 		},
 	})
 }
 
-func testTalendPlanRunConfigDestroy(s *terraform.State) error {
-	tc := testProvider.Meta().(TalendClient)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "talend_plan_runconfig" {
-			continue
-		}
-		// fmt.Println("rs.Primary.ID=", rs.Primary.ID)
-		// fmt.Println("rs.Primary.Attributes[\"plan_id\"]=", rs.Primary.Attributes["plan_id"])
-		plan, err := tc.client.PlansExecutables.GetPlanRunConfiguration(
-			plans_executables.NewGetPlanRunConfigurationParams().WithPlanID(rs.Primary.ID),
-			tc.authInfo)
-		if err != nil {
-			switch err := err.(type) {
-			case *plans_executables.GetPlanRunConfigurationBadRequest:
-				return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
-			case *plans_executables.GetExecutableDetailsNotFound:
-				return nil // correct, expected result
-			}
-			return err
-		}
-		if plan.GetPayload() != nil {
-			return fmt.Errorf("Talend Plan RunConfig still exists for plan: %s", rs.Primary.ID)
-		}
-	}
-
-	return fmt.Errorf("CheckDestroy failed")
-}
-
-func testTalendPlanRunConfigConfigBasic() string {
-	environmentID := "63b56857b2b29e736cecce70" // default
-	workspaceID := "63b56858b2b29e736cecce73"   // Personal
-	artifactID := "63b585c56acf7f4c287d181b"
-	artifactVersion := "0.1.0.20230401015724"
-	taskName := sdkacctest.RandomWithPrefix("task")
-	planName := sdkacctest.RandomWithPrefix("plan")
+func testTalendPlanRunConfigConfigBasic(environmentID, workspaceID, artifactID, artifactVersion, taskName, taskDesc, planName string) string {
 	return fmt.Sprintf(`
 resource "talend_task" "my_talend_task_1" {
     environment_id = %[1]q
     workspace_id   = %[2]q
     name           = %[5]q
-    description    = "description for %[5]s"
+    description    = %[6]q
     artifact       {
                      id      = %[3]q
                      version = %[4]q
@@ -77,7 +61,7 @@ resource "talend_task" "my_talend_task_1" {
 
 resource "talend_plan" "my_talend_plan_1" {
     workspace_id = %[2]q
-    name         = %[6]q
+    name         = %[7]q
     steps        {
                    name       = "step1"
                    condition  = "ALL_SUCCEEDED"
@@ -109,21 +93,34 @@ resource "talend_plan_runconfig" "my_talend_plan_runconfig_1" {
       type = "CLOUD"
     }
 }
-`, environmentID, workspaceID, artifactID, artifactVersion, taskName, planName)
+`, environmentID, workspaceID, artifactID, artifactVersion, taskName, taskDesc, planName)
 }
 
-func testTalendPlanRunConfigExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
+func testTalendPlanRunConfigDestroy(s *terraform.State) error {
+	tc := testProvider.Meta().(TalendClient)
 
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "talend_plan_runconfig" {
+			continue
 		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No TaskID set")
+		// fmt.Println("rs.Primary.ID=", rs.Primary.ID)
+		// fmt.Println("rs.Primary.Attributes[\"plan_id\"]=", rs.Primary.Attributes["plan_id"])
+		plan, err := tc.client.PlansExecutables.GetPlanRunConfiguration(
+			plans_executables.NewGetPlanRunConfigurationParams().WithPlanID(rs.Primary.ID),
+			tc.authInfo)
+		if err != nil {
+			switch err := err.(type) {
+			case *plans_executables.GetPlanRunConfigurationBadRequest:
+				return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+			case *plans_executables.GetExecutableDetailsNotFound:
+				return nil // correct, expected result
+			}
+			return err
 		}
-
-		return nil
+		if plan.GetPayload() != nil {
+			return fmt.Errorf("Talend Plan RunConfig still exists for plan: %s", rs.Primary.ID)
+		}
 	}
+
+	return fmt.Errorf("CheckDestroy failed")
 }

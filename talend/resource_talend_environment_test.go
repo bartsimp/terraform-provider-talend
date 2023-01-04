@@ -5,56 +5,44 @@ import (
 	"testing"
 
 	"github.com/bartsimp/talend-rest-go/client/environments"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestTalendEnvironmentBasic(t *testing.T) {
+	environmentResourceName := "talend_environment.my_talend_environment_1"
+	owner := "dojon70323"
+	environmentName := acctest.RandomWithPrefix("env")
+	environmentDesc := fmt.Sprintf("desc for %s", environmentName)
+	workspaceName := fmt.Sprintf("ws-%s", environmentName)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testPreCheck(t) },
 		Providers:    testProviders,
 		CheckDestroy: testTalendEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testTalendEnvironmentConfigBasic(),
+				Config: testTalendEnvironmentConfigBasic(owner, environmentName, environmentDesc, workspaceName),
 				Check: resource.ComposeTestCheckFunc(
-					testTalendEnvironmentExists("talend_environment.my_talend_environment_1"),
+					resource.TestCheckResourceAttr(environmentResourceName, "owner", owner),
+					resource.TestCheckResourceAttr(environmentResourceName, "name", environmentName),
+					resource.TestCheckResourceAttr(environmentResourceName, "description", environmentDesc),
+					resource.TestCheckResourceAttr(environmentResourceName, "workspace_name", workspaceName),
 				),
 			},
 		},
 	})
 }
 
-func testTalendEnvironmentConfigBasic() string {
-	environmentName := sdkacctest.RandomWithPrefix("env")
-	environmentDesc := fmt.Sprintf("desc for %s", environmentName)
-	workspaceName := fmt.Sprintf("ws-%s", environmentName)
-	owner := "dojon70323"
+func testTalendEnvironmentConfigBasic(owner, environmentName, environmentDesc, workspaceName string) string {
 	return fmt.Sprintf(`
 resource "talend_environment" "my_talend_environment_1" {
-    name            = %[1]q
-    description     = %[2]q
-    workspace_name  = %[3]q
-    owner           = %[4]q
+    owner           = %[1]q
+    name            = %[2]q
+    description     = %[3]q
+    workspace_name  = %[4]q
 }
-`, environmentName, environmentDesc, workspaceName, owner)
-}
-
-func testTalendEnvironmentExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No TaskID set")
-		}
-
-		return nil
-	}
+`, owner, environmentName, environmentDesc, workspaceName)
 }
 
 func testTalendEnvironmentDestroy(s *terraform.State) error {
