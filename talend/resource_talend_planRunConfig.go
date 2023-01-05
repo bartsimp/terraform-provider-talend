@@ -113,7 +113,7 @@ func resourceTalendPlanRunConfigCreate(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	d.SetId(planID)
+	d.SetId(fmt.Sprint("runconfig-", planID))
 	return nil
 }
 
@@ -121,7 +121,7 @@ func resourceTalendPlanRunConfigRead(d *schema.ResourceData, meta interface{}) e
 	talendClient := meta.(TalendClient)
 
 	_, err := talendClient.client.PlansExecutables.GetExecutableDetails(
-		plans_executables.NewGetExecutableDetailsParams().WithPlanID(d.Id()),
+		plans_executables.NewGetExecutableDetailsParams().WithPlanID(d.Get("plan_id").(string)),
 		talendClient.authInfo,
 	)
 	return err
@@ -141,7 +141,7 @@ func resourceTalendPlanRunConfigDelete(d *schema.ResourceData, meta interface{})
 	talendClient := meta.(TalendClient)
 
 	_, err := talendClient.client.PlansExecutables.StopScheduleForPlan(
-		plans_executables.NewStopScheduleForPlanParams().WithPlanID(d.Id()),
+		plans_executables.NewStopScheduleForPlanParams().WithPlanID(d.Get("plan_id").(string)),
 		talendClient.authInfo,
 	)
 	return err

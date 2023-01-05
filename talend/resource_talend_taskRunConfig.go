@@ -119,7 +119,7 @@ func resourceTalendTaskRunConfigCreate(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	d.SetId(taskId)
+	d.SetId(fmt.Sprint("runconfig-", taskId))
 	return nil
 }
 
@@ -127,12 +127,22 @@ func resourceTalendTaskRunConfigRead(d *schema.ResourceData, meta interface{}) e
 	talendClient := meta.(TalendClient)
 
 	_, err := talendClient.client.Tasks.GetTaskConfiguration(
-		tasks.NewGetTaskConfigurationParams().WithTaskID(d.Id()),
+		tasks.NewGetTaskConfigurationParams().WithTaskID(d.Get("task_id").(string)),
 		func(co *runtime.ClientOperation) {
 			co.AuthInfo = talendClient.authInfo
 		},
 	)
-	return err
+	if err != nil {
+		switch err := err.(type) {
+		case *tasks.GetTaskConfigurationBadRequest:
+			return fmt.Errorf("%s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		case *tasks.GetTaskConfigurationUnauthorized:
+			return fmt.Errorf("unauthorized %s", utils.UnmarshalErrorResponse(err.GetPayload()))
+		}
+		return err
+	}
+
+	return nil
 }
 
 func resourceTalendTaskRunConfigUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -149,7 +159,7 @@ func resourceTalendTaskRunConfigDelete(d *schema.ResourceData, meta interface{})
 	talendClient := meta.(TalendClient)
 
 	_, err := talendClient.client.Tasks.StopSchedule(
-		tasks.NewStopScheduleParams().WithTaskID(d.Id()),
+		tasks.NewStopScheduleParams().WithTaskID(d.Get("task_id").(string)),
 		talendClient.authInfo,
 	)
 	return err
