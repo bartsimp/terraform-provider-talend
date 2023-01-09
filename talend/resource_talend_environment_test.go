@@ -17,9 +17,9 @@ func TestTalendEnvironmentBasic(t *testing.T) {
 	environmentDesc := fmt.Sprintf("desc for %s", environmentName)
 	workspaceName := fmt.Sprintf("ws-%s", environmentName)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testPreCheck(t) },
-		Providers:    testProviders,
-		CheckDestroy: testTalendEnvironmentDestroy,
+		PreCheck:          func() { testPreCheck(t) },
+		ProviderFactories: testProviderFactories,
+		CheckDestroy:      testTalendEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testTalendEnvironmentConfigBasic(owner, environmentName, environmentDesc, workspaceName),

@@ -22,9 +22,9 @@ func TestTalendPlanBasic(t *testing.T) {
 	planName := acctest.RandomWithPrefix("plan")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testPreCheck(t) },
-		Providers:    testProviders,
-		CheckDestroy: testTalendPlanDestroy,
+		PreCheck:          func() { testPreCheck(t) },
+		ProviderFactories: testProviderFactories,
+		CheckDestroy:      testTalendPlanDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testTalendPlanConfigBasic(environmentID, workspaceID, artifactID, artifactVersion, taskName, taskDesc, planName),

@@ -20,9 +20,9 @@ func TestTalendTaskBasic(t *testing.T) {
 	taskDesc := fmt.Sprintf("desc for %s", taskName)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testPreCheck(t) },
-		Providers:    testProviders,
-		CheckDestroy: testTalendTaskDestroy,
+		PreCheck:          func() { testPreCheck(t) },
+		ProviderFactories: testProviderFactories,
+		CheckDestroy:      testTalendTaskDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testTalendTaskConfigBasic(environmentID, workspaceID, artifactID, artifactVersion, taskName, taskDesc),

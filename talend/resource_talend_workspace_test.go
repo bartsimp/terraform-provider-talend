@@ -20,9 +20,9 @@ func TestTalendWorkspaceBasic(t *testing.T) {
 	workspaceName := acctest.RandomWithPrefix("ws")
 	workspaceDesc := fmt.Sprintf("desc for %s", workspaceName)
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testPreCheck(t) },
-		Providers:    testProviders,
-		CheckDestroy: testTalendWorkspaceDestroy,
+		PreCheck:          func() { testPreCheck(t) },
+		ProviderFactories: testProviderFactories,
+		CheckDestroy:      testTalendWorkspaceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testTalendWorkspaceConfigBasic(owner, environmentName, environmentDesc, environmentWorkspaceName, workspaceName, workspaceDesc),
